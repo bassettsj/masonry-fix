@@ -1,0 +1,7 @@
+name = Masonry
+description = "Makes the 'jQuery Masonry' plugin available to Drupal as a library."
+core = 7.x
+package = User interface
+
+dependencies[] = libraries (>=2.x)
+

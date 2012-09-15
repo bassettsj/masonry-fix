@@ -1,0 +1,31 @@
+<?php
+/**
+ * @file
+ * Makes the 'jQuery Masonry' plugin available to Drupal as a library.
+ */
+
+/**
+ * Implements hook_libraries_info().
+ */
+function masonry_libraries_info() {
+  $libraries['masonry'] = array(
+    'name' => 'jQuery Masonry',
+    'vendor url' => 'http://masonry.desandro.com/',
+    'download url' => 'http://masonry.desandro.com/',
+    'version arguments' => array(
+      'file' => 'jquery.masonry.min.js',
+      // 2.x: jQuery Masonry v2.1.05
+      'pattern' => '/jQuery\s+Masonry\s+v?([0-9\.]+)/',
+      'lines' => 2,
+      'cols' => 30,
+    ),
+    'files' => array(
+      'js' => array(
+        'jquery.masonry.min.js',
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
