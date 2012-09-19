@@ -1,0 +1,8 @@
+name = Masonry Field Formatter
+description = "Allows multi-value fields to be displayed in a jQuery Masonry grid."
+core = 7.x
+package = User interface
+
+dependencies[] = masonry
+dependencies[] = field_formatter_settings
+

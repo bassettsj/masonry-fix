@@ -1,0 +1,309 @@
+<?php
+/**
+ * @file
+ * Allows multi-value fields to be displayed in a jQuery Masonry grid.
+ */
+
+/**
+ * Implements hook_libraries_info_alter().
+ */
+function masonry_formatter_libraries_info_alter(&$libraries) {
+  // Add Masonry Field Formatter-specific integration files to library
+  $files = array(
+    'css' => array('masonry_formatter.css'),
+  );
+  $libraries['masonry']['integration files']['masonry_formatter'] = $files;
+}
+
+/**
+ * Implements hook_field_formatter_info_alter().
+ */
+function masonry_formatter_field_formatter_info_alter(&$info) {
+  // Get supported field types
+  $field_types = masonry_formatter_field_types();
+
+  // Set default settings
+  foreach ($field_types as $field => $formatters) {
+    foreach ($formatters as $formatter) {
+      $info[$formatter]['settings']['masonry'] = 0;
+      $info[$formatter]['settings']['masonry_width'] = 200;
+      $info[$formatter]['settings']['masonry_animated'] = 1;
+      $info[$formatter]['settings']['masonry_animated_duration'] = 500;
+      $info[$formatter]['settings']['masonry_resizable'] = 1;
+      $info[$formatter]['settings']['masonry_center'] = 0;
+      $info[$formatter]['settings']['masonry_rtl'] = 0;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_settings_form_alter().
+ */
+function masonry_formatter_field_formatter_settings_form_alter(array &$settings_form, array $context) {
+  if (masonry_formatter_is_supported($context)) {
+    $settings = $context['instance']['display'][$context['view_mode']]['settings'];
+
+    // Add settings for configuring Masonry
+    $settings_form['masonry'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable Masonry'),
+      '#description' => t("Displays items in a grid using the jQuery Masonry plugin."),
+      '#default_value' => $settings['masonry'],
+    );
+    if (($library = libraries_detect('masonry')) && !empty($library['installed'])) {
+      $settings_form['masonry_width'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Column width'),
+        '#description' => t("The width of each grid column in pixels."),
+        '#default_value' => $settings['masonry_width'],
+        '#size' => 5,
+        '#maxlength' => 4,
+        '#field_suffix' => t('px'),
+        '#states' => array(
+          'visible' => array(
+            'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
+          ),
+        ),
+        '#prefix' => '<div class="masonry-options" style="padding-left: 1.5em;">',
+      );
+      $settings_form['masonry_animated'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable animations'),
+        '#description' => t("When enabled, grid rearrangements are animated when the container is resized (see 'Make grid resizable' below)."),
+        '#default_value' => $settings['masonry_animated'],
+        '#states' => array(
+          'visible' => array(
+            'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+      $settings_form['masonry_animated_duration'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Duration'),
+        '#description' => t("The duration of the animation in milliseconds (1000 ms = 1 sec)."),
+        '#default_value' => $settings['masonry_animated_duration'],
+        '#size' => 5,
+        '#maxlength' => 4,
+        '#field_suffix' => t('ms'),
+        '#states' => array(
+          'visible' => array(
+            'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
+            'input.form-checkbox[name$="[masonry_animated]"]' => array('checked' => TRUE),
+          ),
+        ),
+        '#prefix' => '<div class="masonry-options animation" style="padding-left: 1.5em;">',
+        '#suffix' => '</div>',
+      );
+      $settings_form['masonry_resizable'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Make grid resizable'),
+        '#description' => t("When enabled, the grid will automatically rearrange itself if the container is resized."),
+        '#default_value' => $settings['masonry_resizable'],
+        '#states' => array(
+          'visible' => array(
+            'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+      $settings_form['masonry_center'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Center grid'),
+        '#description' => t("Centers the grid in the container element."),
+        '#default_value' => $settings['masonry_center'],
+        '#states' => array(
+          'visible' => array(
+            'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+      $settings_form['masonry_rtl'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('RTL layout'),
+        '#description' => t("Displays grid items from right-to-left (for supporting languages like Hebrew and Arabic)."),
+        '#default_value' => $settings['masonry_rtl'],
+        '#states' => array(
+          'visible' => array(
+            'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
+          ),
+        ),
+        '#suffix' => '</div>',
+      );
+    }
+    else {
+      // jQuery Masonry plugin not installed
+      $settings_form['masonry']['#disabled'] = TRUE;
+      $settings_form['masonry']['#description'] = t('This field has been disabled as the jQuery Masonry plugin is not properly installed.');
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary_alter().
+ */
+function masonry_formatter_field_formatter_settings_summary_alter(&$summary, array $context) {
+  if (masonry_formatter_is_supported($context)) {
+    $settings = $context['instance']['display'][$context['view_mode']]['settings'];
+
+    if (!empty($summary)) {
+      $summary .= '<br />';
+    }
+
+    // Display a summary of Masonry settings
+    if (($library = libraries_detect('masonry')) && !empty($library['installed'])) {
+      if (!empty($settings['masonry'])) {
+        $summary .= t('Masonry: Enabled');
+        $summary .= '<br />' . t('Column width: @width px', array('@width' => $settings['masonry_width']));
+        $summary .= '<br />' . t('Animations: @animated', array('@animated' => masonry_formatter_boolean($settings['masonry_animated'], t('Enabled'), t('Disabled'))));
+        if ($settings['masonry_animated']) {
+          $summary .= '<br />' . t('Duration: @duration ms', array('@duration' => $settings['masonry_animated_duration']));
+        }
+        $summary .= '<br />' . t('Resizable: @resizable', array('@resizable' => masonry_formatter_boolean($settings['masonry_resizable'])));
+        $summary .= '<br />' . t('Center grid: @center', array('@center' => masonry_formatter_boolean($settings['masonry_center'])));
+        $summary .= '<br />' . t('RTL layout: @rtl', array('@rtl' => masonry_formatter_boolean($settings['masonry_rtl'])));
+      }
+      else {
+        $summary .= t('Masonry: Disabled');
+      }
+    }
+    else {
+      // jQuery Masonry plugin not installed
+      $summary .= t('Masonry: Not installed');
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for theme_field().
+ */
+function masonry_formatter_preprocess_field(&$variables) {
+  $element = $variables['element'];
+
+  // Get field formatter settings
+  $settings = field_formatter_settings_get_instance_display_settings($element['#entity_type'], $element['#field_name'], $element['#bundle'], $element['#view_mode']);
+
+  // Display field items in a jQuery Masonry grid
+  if (!empty($settings['masonry'])) {
+    if (($library = libraries_load('masonry')) && !empty($library['loaded'])) {
+      // Add classes to field
+      $variables['classes_array'][] = 'masonry-grid';
+
+      // Add default styling to make grids display properly out-of-the-box
+      $styles = '
+        .masonry-grid.field-name-' . $variables['field_name_css'] . ' .field-item {
+          margin: 10px;
+          width: ' . ($settings['masonry_width'] - 20) . 'px;
+        }
+      ';
+      drupal_add_css($styles, 'inline');
+
+      // Initialize Masonry
+      $script = '(function ($) {
+        var $container = $(".masonry-grid.field-name-' . $variables['field_name_css'] . ' .field-items");
+        $container.imagesLoaded(function () {
+          $container.masonry({
+            itemSelector: ".field-item",
+            columnWidth: ' . (int) $settings['masonry_width'] . ',
+            isAnimated: ' . $settings['masonry_animated'] . ',
+            animationOptions: {
+              duration: ' . (int) $settings['masonry_animated_duration'] . '
+            },
+            isResizable: ' . $settings['masonry_resizable'] . ',
+            isFitWidth: ' . $settings['masonry_center'] . ',
+            isRTL: ' . $settings['masonry_rtl'] . '
+          });
+        });
+      })(jQuery);';
+      drupal_add_js($script, array(
+        'type' => 'inline',
+        'scope' => 'footer',
+      ));
+    }
+  }
+}
+
+/**
+ * Get a list of supported field types and their formatters.
+ *
+ * @return
+ *   An associative array where the keys are field types and the values are
+ *   arrays of formatter type names.
+ */
+function masonry_formatter_field_types() {
+  return array(
+    'image' => array(
+      'colorbox',
+      'image',
+    ),
+    'text_long' => array(
+      'text_default',
+      'text_plain',
+      'text_trimmed',
+    ),
+    'text_with_summary' => array(
+      'text_default',
+      'text_plain',
+      'text_summary_or_trimmed',
+      'text_trimmed',
+    ),
+  );
+}
+
+/**
+ * Check if a given field/formatter is supported.
+ *
+ * @param $context
+ *   The $context array provided by the Field Formatter Settings module. See
+ *   field_formatter_settings.api.php for more information.
+ *
+ * @return
+ *   A boolean indicating the supported status.
+ */
+function masonry_formatter_is_supported($context) {
+  $formatter = $context['instance']['display'][$context['view_mode']];
+
+  // Get list of supported field types
+  $field_types = masonry_formatter_field_types();
+
+  // Return true for supported formatters with multi-value fields
+  $field_type_supported = array_key_exists($context['field']['type'], $field_types);
+  $formatter_supported = $field_type_supported && in_array($formatter['type'], $field_types[$context['field']['type']]);
+  $multi_value_field = ($context['field']['cardinality'] > 1) || ($context['field']['cardinality'] == FIELD_CARDINALITY_UNLIMITED);
+  if ($formatter_supported && $multi_value_field) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Convert a boolean variable to a string.
+ *
+ * @param $boolean
+ *   The boolean variable to convert.
+ * @param $true_value
+ *   The string if boolean is true. Set to NULL to use default value (Yes).
+ * @param $false_value
+ *   The string if boolean is false. Set to NULL to use default value (No).
+ *
+ * @return
+ *   A string-representation of the boolean variable.
+ */
+function masonry_formatter_boolean($boolean, $true_value = NULL, $false_value = NULL) {
+  // Set default values
+  if (empty($true_value)) {
+    $true_value = t('Yes');
+  }
+  if (empty($false_value)) {
+    $false_value = t('No');
+  }
+
+  // Convert boolean to string
+  if ($boolean) {
+    return $true_value;
+  }
+  else {
+    return $false_value;
+  }
+}
+

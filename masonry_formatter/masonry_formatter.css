@@ -1,0 +1,13 @@
+/**
+ * @file
+ * Apply default stying to Masonry grid field items.
+ */
+
+.masonry-grid .field-items {
+  margin: 0 auto; /* Center container for use with isFitWidth */
+}
+
+.masonry-grid .field-item {
+  float: left;
+}
+
