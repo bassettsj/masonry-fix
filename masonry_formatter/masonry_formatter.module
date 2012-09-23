@@ -5,17 +5,6 @@
  */
 
 /**
- * Implements hook_libraries_info_alter().
- */
-function masonry_formatter_libraries_info_alter(&$libraries) {
-  // Add Masonry Field Formatter-specific integration files to library
-  $files = array(
-    'css' => array('masonry_formatter.css'),
-  );
-  $libraries['masonry']['integration files']['masonry_formatter'] = $files;
-}
-
-/**
  * Implements hook_field_formatter_info_alter().
  */
 function masonry_formatter_field_formatter_info_alter(&$info) {
@@ -146,21 +135,27 @@ function masonry_formatter_preprocess_field(&$variables) {
   // Display field items in a jQuery Masonry grid
   if (!empty($settings['masonry'])) {
     if (($library = libraries_load('masonry')) && !empty($library['loaded'])) {
-      // Add classes to field
-      $variables['classes_array'][] = 'masonry-grid';
-
       // Add default styling to make grids display properly out-of-the-box
-      $styles = '
-        .masonry-grid.field-name-' . $variables['field_name_css'] . ' .field-item {
+      $grid_styles = '
+        .field-name-' . $variables['field_name_css'] . ' .field-item {
+          float: left;
           margin: 10px;
           width: ' . ($settings['masonry_width'] - 20) . 'px;
         }
       ';
-      drupal_add_css($styles, 'inline');
+      drupal_add_css($grid_styles, 'inline');
+      if ($settings['masonry_center']) {
+        $center_styles = '
+          .field-name-' . $variables['field_name_css'] . ' .field-items {
+            margin: 0 auto;
+          }
+        ';
+        drupal_add_css($center_styles, 'inline');
+      }
 
       // Initialize Masonry
       $script = '(function ($) {
-        var $container = $(".masonry-grid.field-name-' . $variables['field_name_css'] . ' .field-items");
+        var $container = $(".field-name-' . $variables['field_name_css'] . ' .field-items");
         $container.imagesLoaded(function () {
           $container.masonry({
             itemSelector: ".field-item",
