@@ -219,6 +219,11 @@ function masonry_formatter_field_types() {
 function masonry_formatter_is_supported($context) {
   $formatter = $context['instance']['display'][$context['view_mode']];
 
+  // Fields in Views aren't supported at this stage...
+  if ($context['instance']['entity_type'] == 'ctools' && $context['instance']['bundle'] == 'ctools') {
+    return FALSE;
+  }
+
   // Get list of supported field types
   $field_types = masonry_formatter_field_types();
 
