@@ -19,8 +19,10 @@ class views_plugin_style_masonry_views_grid extends views_plugin_style {
     foreach ($default_options as $option => $value) {
       $options[$option] = array(
         'default' => $value,
-        'bool' => is_int($value) ? TRUE : FALSE,
       );
+      if (is_int($value)) {
+        $options[$option]['bool'] = TRUE;
+      }
     }
 
     return $options;
