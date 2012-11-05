@@ -38,12 +38,17 @@ function masonry_formatter_field_formatter_settings_form_alter(array &$settings_
     );
     if (($library = libraries_detect('masonry')) && !empty($library['installed'])) {
       masonry_options_form($settings_form, $settings);
+      $settings_form['masonry_width_unit']['#states'] = array(
+        'visible' => array(
+          'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
+        ),
+      );
+      $settings_form['masonry_width_unit']['#prefix'] = '<div class="masonry-options" style="padding-left: 1.5em;">';
       $settings_form['masonry_width']['#states'] = array(
         'visible' => array(
           'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
         ),
       );
-      $settings_form['masonry_width']['#prefix'] = '<div class="masonry-options" style="padding-left: 1.5em;">';
       $settings_form['masonry_animated']['#states'] = array(
         'visible' => array(
           'input.form-checkbox[name$="[masonry]"]' => array('checked' => TRUE),
@@ -102,7 +107,7 @@ function masonry_formatter_field_formatter_settings_summary_alter(&$summary, arr
     if (($library = libraries_detect('masonry')) && !empty($library['installed'])) {
       if (!empty($settings['masonry'])) {
         $summary .= t('Masonry: Enabled');
-        $summary .= '<br />' . t('Column width: @width px', array('@width' => $settings['masonry_width']));
+        $summary .= '<br />' . t('Column width: @width @unit', array('@width' => $settings['masonry_width'], '@unit' => $settings['masonry_width_unit']));
         $summary .= '<br />' . t('Animations: @animated', array('@animated' => masonry_formatter_boolean($settings['masonry_animated'], t('Enabled'), t('Disabled'))));
         if ($settings['masonry_animated']) {
           $summary .= '<br />' . t('Duration: @duration ms', array('@duration' => $settings['masonry_animated_duration']));
@@ -136,11 +141,13 @@ function masonry_formatter_preprocess_field(&$variables) {
   if (!empty($settings['masonry'])) {
     if (($library = libraries_load('masonry')) && !empty($library['loaded'])) {
       // Add default styling to make grids display properly out-of-the-box
+      $css_margin = ($settings['masonry_width_unit'] == 'px') ? '10px' : '2%';
+      $css_width = ($settings['masonry_width_unit'] == 'px') ? ($settings['masonry_width'] - 20) . 'px' : ($settings['masonry_width'] - 5) . '%';
       $grid_styles = '
         .field-name-' . $variables['field_name_css'] . ' .field-item {
           float: left;
-          margin: 10px;
-          width: ' . ($settings['masonry_width'] - 20) . 'px;
+          margin: ' . $css_margin . ';
+          width: ' . $css_width . ';
         }
       ';
       drupal_add_css($grid_styles, 'inline');
@@ -153,13 +160,24 @@ function masonry_formatter_preprocess_field(&$variables) {
         drupal_add_css($center_styles, 'inline');
       }
 
+      // Get column width
+      if ($settings['masonry_width_unit'] == 'px') {
+        $column_width = (int) $settings['masonry_width'];
+      }
+      else {
+        $percentage = $settings['masonry_width'] / 100;
+        $column_width = 'function (containerWidth) {
+          return containerWidth * ' . $percentage . ';
+        }';
+      }
+
       // Initialize Masonry
       $script = '(function ($) {
         var $container = $(".field-name-' . $variables['field_name_css'] . ' .field-items");
         $container.imagesLoaded(function () {
           $container.masonry({
             itemSelector: ".field-item",
-            columnWidth: ' . (int) $settings['masonry_width'] . ',
+            columnWidth: ' . $column_width . ',
             isAnimated: ' . $settings['masonry_animated'] . ',
             animationOptions: {
               duration: ' . (int) $settings['masonry_animated_duration'] . '

@@ -35,7 +35,9 @@ function masonry_libraries_info() {
  * @return
  *   An associative array of default options for the jQuery Masonry plugin.
  *   Contains:
- *   - masonry_width: The width of each grid column in pixels.
+ *   - masonry_width_unit: The unit of measurement used for grid column widths
+ *     (pixels or percentages).
+ *   - masonry_width: The width of each grid column.
  *   - masonry_animated: Whether or not animations are enabled for the grid.
  *   - masonry_animated_duration: The duration of animations in milliseconds.
  *   - masonry_resizable: Whether or not the grid is re-arranged when the
@@ -46,6 +48,7 @@ function masonry_libraries_info() {
  */
 function masonry_default_options() {
   return array(
+    'masonry_width_unit' => 'px',
     'masonry_width' => '200',
     'masonry_animated' => 1,
     'masonry_animated_duration' => '500',
@@ -66,14 +69,23 @@ function masonry_default_options() {
  *   place form values are saved.
  */
 function masonry_options_form(&$form, $default_values) {
+  $form['masonry_width_unit'] = array(
+    '#type' => 'radios',
+    '#title' => t('Column width unit'),
+    '#description' => t("The unit of measurement used for grid column widths."),
+    '#options' => array(
+      'px' => t('Pixels'),
+      '%' => t("Percentage (of the container's width)"),
+    ),
+    '#default_value' => $default_values['masonry_width_unit'],
+  );
   $form['masonry_width'] = array(
     '#type' => 'textfield',
     '#title' => t('Column width'),
-    '#description' => t("The width of each grid column in pixels."),
+    '#description' => t("The width of each grid column."),
     '#default_value' => $default_values['masonry_width'],
     '#size' => 5,
     '#maxlength' => 4,
-    '#field_suffix' => t('px'),
   );
   $form['masonry_animated'] = array(
     '#type' => 'checkbox',

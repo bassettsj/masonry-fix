@@ -24,11 +24,13 @@ function template_preprocess_views_view_masonry(&$vars) {
     $settings = $vars['options'];
 
     // Add default styling to make grids display properly out-of-the-box
+    $css_margin = ($settings['masonry_width_unit'] == 'px') ? '10px' : '2%';
+    $css_width = ($settings['masonry_width_unit'] == 'px') ? ($settings['masonry_width'] - 20) . 'px' : ($settings['masonry_width'] - 5) . '%';
     $grid_styles = '
       .' . $view_class . ' .masonry-item {
         float: left;
-        margin: 10px;
-        width: ' . ($settings['masonry_width'] - 20) . 'px;
+        margin: ' . $css_margin . ';
+        width: ' . $css_width . ';
       }
     ';
     drupal_add_css($grid_styles, 'inline');
@@ -41,13 +43,24 @@ function template_preprocess_views_view_masonry(&$vars) {
       drupal_add_css($center_styles, 'inline');
     }
 
+    // Get column width
+    if ($settings['masonry_width_unit'] == 'px') {
+      $column_width = (int) $settings['masonry_width'];
+    }
+    else {
+      $percentage = $settings['masonry_width'] / 100;
+      $column_width = 'function (containerWidth) {
+        return containerWidth * ' . $percentage . ';
+      }';
+    }
+
     // Initialize Masonry
     $script = '(function ($) {
       var $container = $(".' . $view_class . ' .view-content");
       $container.imagesLoaded(function () {
         $container.masonry({
           itemSelector: ".masonry-item",
-          columnWidth: ' . (int) $settings['masonry_width'] . ',
+          columnWidth: ' . $column_width . ',
           isAnimated: ' . $settings['masonry_animated'] . ',
           animationOptions: {
             duration: ' . (int) $settings['masonry_animated_duration'] . '
