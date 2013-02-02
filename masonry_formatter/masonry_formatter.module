@@ -205,9 +205,9 @@ function masonry_formatter_preprocess_field(&$variables) {
  *   arrays of formatter type names.
  */
 function masonry_formatter_field_types() {
-  return array(
+  // Core
+  $field_types = array(
     'image' => array(
-      'colorbox',
       'image',
     ),
     'text_long' => array(
@@ -222,6 +222,13 @@ function masonry_formatter_field_types() {
       'text_trimmed',
     ),
   );
+
+  // Colorbox
+  if (module_exists('colorbox')) {
+    $field_types['image'][] = 'colorbox';
+  }
+
+  return $field_types;
 }
 
 /**
