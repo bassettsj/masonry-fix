@@ -228,6 +228,11 @@ function masonry_formatter_field_types() {
     $field_types['image'][] = 'colorbox';
   }
 
+  // Media Gallery
+  if (module_exists('media_gallery')) {
+    $field_types['media'] = array('media_gallery');
+  }
+
   return $field_types;
 }
 
