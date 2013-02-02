@@ -70,6 +70,8 @@ function template_preprocess_views_view_masonry(&$vars) {
           gutterWidth: ' . (int) $settings['masonry_gutter'] . ',
           isRTL: ' . $settings['masonry_rtl'] . '
         });
+      }).bind("views_infinite_scroll_updated", function () {
+        $container.masonry("reload");
       });
     })(jQuery);';
     drupal_add_js($script, array(
