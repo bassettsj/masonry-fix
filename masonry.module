@@ -31,6 +31,9 @@ function masonry_libraries_info() {
 
 /**
  * Check if the Masonry library is installed.
+ *
+ * @return
+ *   A boolean indicating the installed status.
  */
 function masonry_installed() {
   if (($library = libraries_detect('masonry')) && !empty($library['installed'])) {
@@ -43,6 +46,9 @@ function masonry_installed() {
 
 /**
  * Check if the Masonry library has been loaded.
+ *
+ * @return
+ *   A boolean indicating the loaded status.
  */
 function masonry_loaded() {
   if (($library = libraries_load('masonry')) && !empty($library['loaded'])) {
