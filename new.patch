@@ -1,0 +1,32 @@
+diff --git masonry.js masonry.js
+index 6f2baca..d1afe7d 100644
+--- masonry.js
++++ masonry.js
+@@ -51,6 +51,27 @@ Drupal.behaviors.masonry = {
+       else {
+         $container.masonry($options);
+       }
++      //Add event listener for the Views Infinite Scroll change event being fired after
++      //ajaxing content in, then wait for images or not to reload the masonry grid.
++      if( typeof Drupal.settings.infinite_scroll  !== 'undefined'  &&  Drupal.settings.infinite_scroll !== null ){
++
++        $container.on('change', function() {
++          // Wait for images to load (if option is selected )then call reload
++          if ( settings.images_first ) {
++
++            $container.imagesLoaded(function () {
++              $container.masonry('reload');
++            });
++
++          }
++
++          // else continue as normal
++          else {
++            $container.masonry('reload');
++          }
++
++        });
++      }
+     });
+ 
+   }
